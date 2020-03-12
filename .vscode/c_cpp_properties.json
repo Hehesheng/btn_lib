@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "intelliSenseMode": "clang-x64",
+            "name": "Win32",
+            "cppStandard": "c++11",
+            "cStandard": "c99",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ]
+        }
+    ],
+    "version": 4
+}
