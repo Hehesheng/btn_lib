@@ -1,5 +1,8 @@
 #include "btn_lib.h"
 #include <string.h>
+#ifdef BTN_USING_DYNAMIC
+#include BTN_LIB_INC
+#endif
 
 #define EVENT_CB(btn, e)             \
     if (btn->event_callback)         \
@@ -16,7 +19,7 @@ typedef enum
 
 typedef enum
 {
-    STATE_START = 1,
+    STATE_START,
     STATE_WAIT_DEBOUNCE,
     STATE_WAIT_LONG_PRESSED,
     STATE_WAIT_HOLD,
@@ -45,7 +48,6 @@ static const state_m state_tab[] = {
     {STATE_WAIT_LONG_PRESSED, LEVEL_FALSE, STATE_START, on_wait_long},
     {STATE_WAIT_HOLD, LEVEL_TRUE, STATE_WAIT_HOLD, on_wait_hold},
     {STATE_WAIT_HOLD, LEVEL_FALSE, STATE_START, on_wait_hold},
-    {0, 0, 0, 0},
 };
 
 static btn_handle_t header = {0};
@@ -90,6 +92,23 @@ btn_callback_t btn_attach(btn_handle_t *btn, btn_event event, btn_callback_t cb)
 
     return old;
 }
+
+btn_handle_t *btn_find(char *name)
+{
+    btn_handle_t *btn;
+
+    for (btn = header.next; btn != NULL; btn = btn->next)
+    {
+        if (strncmp(btn->name, name, BTN_NAME_MAX_LEN) == 0)
+        {
+            break;
+        }
+    }
+
+    return btn;
+}
+
+btn_event btn_get_event(btn_handle_t *btn) { return btn->event; }
 
 static level_t get_value(btn_handle_t *btn)
 {
@@ -184,7 +203,7 @@ void btn_process(int tick)
             btn->tick = (btn->tick > 0) ? btn->tick : 0;
         }
         /* state machine */
-        for (int i = 0; state_tab[i].state != 0; i++)
+        for (int i = 0; i < sizeof(state_tab) / sizeof(state_m); i++)
         {
             if (btn->state == state_tab[i].state && value == state_tab[i].value && state_tab[i].state_handle != NULL)
             {
@@ -194,3 +213,24 @@ void btn_process(int tick)
         }
     }
 }
+
+#ifdef BTN_USING_DYNAMIC
+btn_handle_t *btn_create(char *name, read_btn_t read, uint8_t level)
+{
+    btn_handle_t *btn;
+
+    btn = BTN_ALLOC(sizeof(btn_handle_t));
+    if (btn == NULL) return btn;
+
+    btn_init(btn, name, read, level);
+
+    return btn;
+}
+
+void btn_del(btn_handle_t *btn)
+{
+    if (btn_detach(btn) == NULL) return;
+
+    BTN_FREE(btn);
+}
+#endif
